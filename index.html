@@ -237,13 +237,19 @@
 }
             
             /* Выделение разделов на телефоне (как на ПК) */
-.nav-item.active {
-    background: rgba(var(--accent-rgb), 0.15); /* Полупрозрачный фон цвета темы */
-    color: var(--text); /* Текст возвращаем к обычному цвету */
-    text-shadow: none; /* Убираем свечение текста */
-    box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1); /* Легкая тень */
-    border-radius: 16px; /* Скругляем углы плашки */
-    opacity: 1;
+/* Убираем мгновенный фон у активного пункта на ПК, оставляем только для мобилок */
+.nav-item.active { 
+    opacity: 1; 
+    background: transparent; 
+    box-shadow: none;
+}
+
+/* Оставляем выделение фоном только для мобильной версии, где индикатор скрыт */
+@media (max-width: 768px) {
+    .nav-item.active {
+        background: rgba(var(--accent-rgb), 0.15);
+        box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1);
+    }
 }
 
             .nav-indicator { display: none; }
@@ -628,15 +634,23 @@
         function showToast(text) { toast.innerText = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
 
         document.querySelectorAll('.nav-item').forEach(item => {
-            item.onclick = () => {
-                const idx = item.dataset.index; 
-                if (window.innerWidth > 768) navIndicator.style.transform = `translateY(${idx * 60}px)`; 
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); 
-                item.classList.add('active');
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
-                document.getElementById(item.dataset.page).classList.add('active');
-            };
-        });
+    item.onclick = () => {
+        const idx = item.dataset.index; 
+        
+        // Логика индикатора для ПК
+        if (window.innerWidth > 768) {
+            navIndicator.style.transform = `translateY(${idx * 60}px)`;
+        } 
+
+        // Переключение активного состояния текста
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); 
+        item.classList.add('active');
+
+        // Переключение страниц
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+        document.getElementById(item.dataset.page).classList.add('active');
+    };
+});
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.onresize = resize; resize();
