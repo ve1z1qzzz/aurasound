@@ -13,7 +13,7 @@
             --text: #ffffff;
             --bg: #050505;
             --glow-intensity: 0.8;
-            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body.light-theme {
@@ -23,12 +23,11 @@
             --glow-intensity: 1;
         }
 
-        /* Цветовые схемы */
         body.scheme-silver { --accent-rgb: 192, 192, 192; }
         body.scheme-midnight { --accent-rgb: 100, 149, 237; }
         body.scheme-gold { --accent-rgb: 212, 175, 55; }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -47,118 +46,119 @@
 
         .app-shell { position: relative; z-index: 1; display: flex; height: 100vh; }
 
-        /* Навигация */
         .sidebar {
             width: 280px;
             background: var(--glass);
             backdrop-filter: blur(20px);
             padding: 40px 25px;
-            display: flex;
-            flex-direction: column;
+            display: flex; flex-direction: column;
             border-right: 1px solid rgba(var(--accent-rgb), 0.1);
         }
 
-        .nav-container { position: relative; margin-top: 20px; }
+        .nav-container { position: relative; }
         .nav-item {
             padding: 16px 20px; border-radius: 16px; cursor: pointer;
             transition: 0.3s; color: var(--text); opacity: 0.5;
             margin-bottom: 8px; font-weight: 500; font-size: 17px;
-            position: relative; z-index: 2; height: 52px; display: flex; align-items: center;
+            position: relative; z-index: 2;
+            height: 52px; display: flex; align-items: center;
         }
         
-        /* Исправление "двоения" - активный класс только для текста, фон через индикатор */
-        .nav-item.active { opacity: 1; }
-
+        /* Исправление 2: Анимация индикатора только если не мобилка */
         .nav-indicator {
-            position: absolute; left: 0; width: 100%; height: 52px;
+            position: absolute;
+            left: 0; width: 100%; height: 52px;
             background: rgba(var(--accent-rgb), 0.2);
             border-radius: 16px;
-            transition: var(--transition);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1; pointer-events: none;
-            box-shadow: 0 0 15px rgba(var(--accent-rgb), 0.2);
         }
 
-        /* Плеер */
-        .content { flex: 1; display: flex; align-items: center; justify-content: center; }
+        /* Исправление 1: Выделение цветом на телефоне */
+        @media (max-width: 768px) {
+            .nav-item.active {
+                background: var(--accent) !important;
+                color: #000 !important;
+                opacity: 1;
+            }
+            .nav-indicator { display: none; } /* Убираем индикатор на мобилках */
+            .sidebar { width: 100%; height: 80px; flex-direction: row; padding: 10px; position: fixed; bottom: 0; z-index: 100; border-right: none; border-top: 1px solid rgba(var(--accent-rgb), 0.1); }
+            .logo { display: none; }
+            .nav-container { display: flex; width: 100%; justify-content: space-around; }
+            .nav-item { margin-bottom: 0; font-size: 14px; flex: 1; justify-content: center; }
+            .content { padding-bottom: 80px; }
+            
+            /* Исправление 3: Скрываем звук и опускаем худ */
+            .volume-container { display: none !important; }
+            .controls-row { margin-top: 40px !important; }
+        }
+
+        .content { flex: 1; display: flex; align-items: center; justify-content: center; position: relative; }
         .page { display: none; width: 100%; height: 100%; animation: fadeIn 0.4s ease; }
         .page.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
 
         .player-hub {
             background: var(--glass); backdrop-filter: blur(30px);
-            padding: 50px; border-radius: 50px; width: 90%; max-width: 600px;
-            text-align: center; border: 1px solid rgba(var(--accent-rgb), 0.1);
+            padding: 50px; border-radius: 50px;
+            width: 90%; max-width: 600px; text-align: center;
+            border: 1px solid rgba(var(--accent-rgb), 0.1);
         }
 
-        .song-meta { width: 100%; overflow: hidden; margin-bottom: 25px; }
-        .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; }
-        .marquee-text { display: inline-block; transition: transform 0.1s linear; }
+        .song-meta h1 { font-size: 28px; margin-bottom: 6px; white-space: nowrap; }
+        .song-meta p { opacity: 0.5; font-size: 16px; text-transform: lowercase; white-space: nowrap; }
 
+        /* Исправление 4: Бегущая строка */
+        .marquee-container { width: 100%; overflow: hidden; position: relative; }
         @keyframes marquee {
-            0% { transform: translateX(20px); }
-            33% { transform: translateX(calc(-100% + 200px)); }
-            66% { transform: translateX(calc(-100% + 200px)); }
-            100% { transform: translateX(20px); }
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
         }
+        .marquee-text { display: inline-block; padding-left: 0; }
+        .is-scrolling { animation: marquee 10s linear infinite; display: inline-block; }
 
         .controls-row { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 25px 0; }
-        .circle-btn { background: var(--accent); border: none; width: 65px; height: 65px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.4s; }
-        .circle-btn svg { fill: #2a2a2a; width: 24px; height: 24px; }
-
+        .circle-btn { background: var(--accent); border: none; width: 65px; height: 65px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .nav-btn { background: none; border: none; cursor: pointer; opacity: 0.4; transition: 0.3s; }
-        .nav-btn.active-mode svg { fill: var(--accent) !important; filter: drop-shadow(0 0 10px var(--accent)); opacity: 1; }
-        .nav-btn.liked svg { fill: #ff4d4d !important; filter: drop-shadow(0 0 15px rgba(var(--accent-rgb), 0.8)); opacity: 1; }
+        .nav-btn.active-mode svg { fill: var(--accent) !important; }
 
-        /* Список избранного */
-        .fav-list { list-style: none; width: 100%; padding: 0 20px; overflow-y: auto; }
-        .fav-item {
-            background: var(--glass); padding: 0 20px; border-radius: 15px;
-            margin-bottom: 12px; display: flex; align-items: center;
-            height: 70px; border: 1px solid rgba(var(--accent-rgb), 0.05);
-        }
-        .fav-info { flex: 1; min-width: 0; padding-right: 15px; }
-        .fav-info div { 
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
-        }
-
-        .remove-btn {
-            background: none; border: none; color: #ff4d4d; 
-            font-size: 24px; cursor: pointer; padding: 10px; flex-shrink: 0;
-        }
-
-        #toast { 
-            position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-            background: var(--accent); color: #000; padding: 10px 25px;
-            border-radius: 50px; font-weight: bold; opacity: 0; transition: 0.3s; z-index: 1000;
-        }
-        #toast.show { opacity: 1; transform: translateX(-50%) translateY(-20px); }
-
-        /* Адаптив под мобильные */
+        /* Исправление 5: Сердечко на мобилке */
         @media (max-width: 768px) {
-            .sidebar { width: 80px; padding: 20px 10px; }
-            .logo { display: none; }
-            .nav-item { font-size: 0; justify-content: center; padding: 0; }
-            .nav-item::before { content: "•"; font-size: 30px; }
-            
-            /* На мобилках индикатор красится в цвет темы */
-            .nav-indicator { background: var(--accent); box-shadow: 0 0 20px var(--accent); }
-            
-            .volume-container { display: none !important; } /* Убираем звук */
-            .controls-row { margin-top: 40px; } /* Опускаем HUD */
-            
-            .player-hub { padding: 30px 20px; }
-            .remove-btn { font-size: 28px; padding: 15px; } /* Увеличенный крестик */
+            .nav-btn.liked svg { 
+                fill: #ff4d4d !important; 
+                filter: drop-shadow(0 0 15px var(--accent)) !important; 
+                opacity: 1;
+            }
         }
+        .nav-btn.liked svg { fill: #ff4d4d; opacity: 1; }
+
+        /* Исправление 6: Избранное и крестик */
+        .fav-item {
+            background: var(--glass); padding: 0 15px; border-radius: 15px;
+            margin-bottom: 12px; display: flex; align-items: center; 
+            height: 70px; width: 100%; gap: 10px;
+        }
+        .fav-info { flex: 1; min-width: 0; text-align: left; }
+        .fav-info div { 
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap; 
+        }
+        .del-btn { 
+            background: none; border: none; color: #ff4d4d; 
+            font-size: 24px; /* Больше крестик */
+            cursor: pointer; padding: 10px; min-width: 45px;
+        }
+
+        #toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 10px 25px; border-radius: 50px; opacity: 0; transition: 0.3s; z-index: 1000; }
+        #toast.show { opacity: 1; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body class="scheme-silver">
-
     <canvas id="bg-canvas"></canvas>
-    <div id="toast">Уведомление</div>
-
     <div class="app-shell">
         <audio id="audio" crossorigin="anonymous"></audio>
-
         <nav class="sidebar">
+            <div class="logo">Aura Music</div>
             <div class="nav-container">
                 <div class="nav-indicator" id="nav-indicator"></div>
                 <div class="nav-item active" data-page="home" data-index="0">Плеер</div>
@@ -170,55 +170,38 @@
         <main class="content">
             <div class="page active" id="home">
                 <div class="player-hub">
-                    <div class="cover-container" id="coverWrapper" style="margin-bottom: 20px;">
-                        <div class="no-cover" style="width:180px;height:180px;background:rgba(255,255,255,0.05);margin:auto;border-radius:30px;"></div>
-                    </div>
-                    
+                    <div id="toast">Готово</div>
                     <div class="song-meta">
                         <div class="marquee-container"><h1 id="title" class="marquee-text">Добавьте музыку</h1></div>
-                        <div class="marquee-container"><p id="artist" class="marquee-text" style="opacity:0.5">Aura Music</p></div>
+                        <div class="marquee-container"><p id="artist" class="marquee-text">чтобы начать</p></div>
                     </div>
-
-                    <div class="slider-base" id="progressTrack" style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;">
-                        <div id="progressFill" style="width:0%;height:100%;background:var(--accent);border-radius:10px;"></div>
-                    </div>
-
                     <div class="controls-row">
-                        <button class="nav-btn" onclick="document.getElementById('fileInput').click()"><svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
-                        <input type="file" id="fileInput" multiple hidden onchange="handleFiles(event)">
-                        
-                        <button class="nav-btn" id="shuffleBtn" onclick="toggleShuffle()"><svg width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.44l2.04 2.04V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
-                        <button class="nav-btn" onclick="playPrev()"><svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
-                        
-                        <button class="circle-btn" id="playBtn"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-                        
-                        <button class="nav-btn" onclick="playNext()"><svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                        <button class="nav-btn" id="repeatBtn" onclick="toggleRepeat()"><svg width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-                        <button class="nav-btn" id="likeBtn" onclick="toggleLike()"><svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+                        <button class="nav-btn" onclick="document.getElementById('fileInput').click()"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" fill="currentColor"/></svg></button>
+                        <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;" onchange="handleMultipleFiles(event)">
+                        <button class="nav-btn" id="shuffleBtn" onclick="toggleShuffle()"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.44l2.04 2.04V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z" fill="currentColor"/></svg></button>
+                        <button class="circle-btn" id="playBtn"><svg id="playIcon" width="30" height="30" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+                        <button class="nav-btn" id="likeBtn" onclick="toggleLike()"><svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="currentColor"/></svg></button>
                     </div>
-
-                    <div class="volume-container" style="display:flex; align-items:center; gap:10px; width:150px; margin:auto;">
-                        <span style="font-size:12px">Vol</span>
-                        <div class="slider-base" id="volTrack" style="flex:1;height:4px;background:rgba(255,255,255,0.1);border-radius:10px;cursor:pointer;">
-                            <div id="volFill" style="width:50%;height:100%;background:var(--accent);border-radius:10px;"></div>
-                        </div>
+                    <div class="volume-container" style="display: flex; align-items: center; gap: 10px; justify-content: center;">
+                        <span style="font-size: 12px; opacity: 0.5;">VOL</span>
+                        <input type="range" min="0" max="1" step="0.01" value="0.5" oninput="audio.volume = this.value" style="width: 100px;">
                     </div>
                 </div>
             </div>
 
             <div class="page" id="library">
-                <h1 style="margin: 30px;">Избранное</h1>
-                <ul class="fav-list" id="fav-list"></ul>
+                <h1 style="margin-bottom: 20px;">Избранное</h1>
+                <ul class="fav-list" id="fav-list" style="width: 90%; max-height: 70vh; overflow-y: auto;"></ul>
             </div>
 
             <div class="page" id="settings">
-                <h1 style="margin: 30px;">Настройки</h1>
-                <div class="scheme-picker" style="display:flex; gap:15px; margin-bottom: 20px;">
-                    <div class="color-dot" style="width:30px;height:30px;background:#c0c0c0;border-radius:50%;cursor:pointer;" onclick="setScheme('silver')"></div>
-                    <div class="color-dot" style="width:30px;height:30px;background:#6495ED;border-radius:50%;cursor:pointer;" onclick="setScheme('midnight')"></div>
-                    <div class="color-dot" style="width:30px;height:30px;background:#D4AF37;border-radius:50%;cursor:pointer;" onclick="setScheme('gold')"></div>
+                <h1>Настройки</h1>
+                <div class="scheme-picker" style="display:flex; gap:15px; margin: 20px;">
+                    <div onclick="setScheme('silver')" style="width:30px; height:30px; background:#c0c0c0; border-radius:50%; cursor:pointer;"></div>
+                    <div onclick="setScheme('midnight')" style="width:30px; height:30px; background:#6495ED; border-radius:50%; cursor:pointer;"></div>
+                    <div onclick="setScheme('gold')" style="width:30px; height:30px; background:#D4AF37; border-radius:50%; cursor:pointer;"></div>
                 </div>
-                <button onclick="toggleTheme()" style="padding:10px 20px; border-radius:10px; border:none; background:var(--accent); cursor:pointer;">Сменить тему</button>
+                <button onclick="toggleTheme()" style="padding: 10px 20px; border-radius: 10px; border: none; background: var(--accent); color: #000;">Сменить тему</button>
             </div>
         </main>
     </div>
@@ -227,143 +210,116 @@
         const audio = document.getElementById('audio');
         const playBtn = document.getElementById('playBtn');
         const playIcon = document.getElementById('playIcon');
-        const titleEl = document.getElementById('title');
-        const artistEl = document.getElementById('artist');
         const toast = document.getElementById('toast');
-        const navIndicator = document.getElementById('nav-indicator');
+        let favorites = [];
+        let currentTrack = null;
 
-        let playlist = [];
-        let currentIndex = -1;
-        let isPlaying = false;
-        let isRepeat = false;
-        let isShuffle = false;
-
-        // Фильтрация ссылок
-        function cleanName(name) {
-            return name.replace(/(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.[a-zA-Z]{2,})(\/\S*)?/g, '').trim() || "Unknown Track";
+        // Исправление 4: Фильтрация ссылок
+        function cleanText(text) {
+            return text.replace(/(https?:\/\/)?(www\.)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/[^\s]*)?/g, "").trim();
         }
 
-        // Управление текстом (бегущая строка)
+        function showToast(msg) {
+            toast.innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
+        }
+
+        // Исправление 4: Логика бегущей строки
         function updateMarquee(el) {
             const container = el.parentElement;
-            el.style.animation = 'none';
+            el.classList.remove('is-scrolling');
+            el.innerHTML = cleanText(el.innerText);
+            
             if (el.scrollWidth > container.offsetWidth) {
-                const duration = el.scrollWidth / 40; 
-                el.style.animation = `marquee ${duration}s linear infinite`;
+                const originalText = el.innerHTML;
+                el.innerHTML = `<span>${originalText}</span><span style="margin-left:50px">${originalText}</span>`;
+                el.classList.add('is-scrolling');
             }
         }
 
-        async function handleFiles(e) {
-            const files = Array.from(e.target.files);
-            for (const file of files) {
-                const url = URL.createObjectURL(file);
-                playlist.push({
-                    title: cleanName(file.name.replace(/\.[^/.]+$/, "")),
-                    artist: "Загружено",
-                    src: url,
-                    id: Date.now() + Math.random()
-                });
+        async function handleMultipleFiles(event) {
+            const files = Array.from(event.target.files);
+            for (let file of files) {
+                const track = {
+                    id: Date.now() + Math.random(),
+                    title: cleanText(file.name.replace(/\.[^/.]+$/, "")),
+                    artist: "Local",
+                    src: URL.createObjectURL(file)
+                };
+                favorites.push(track);
             }
-            updateLibrary();
-            if (currentIndex === -1) playTrack(0);
+            updateFavUI();
+            if (!currentTrack && favorites.length > 0) playTrack(0);
         }
 
-        function playTrack(index) {
-            if (index < 0 || index >= playlist.length) return;
-            
-            // Логика: если нажат текущий трек - пауза
-            if (index === currentIndex) {
-                togglePlay();
-                showToast(isPlaying ? "Воспроизведение" : "Трек приостановлен");
-                return;
-            }
-
-            currentIndex = index;
-            const track = playlist[index];
-            audio.src = track.src;
-            titleEl.innerText = track.title;
-            artistEl.innerText = track.artist;
-            
-            setTimeout(() => {
-                updateMarquee(titleEl);
-                updateMarquee(artistEl);
-            }, 100);
-
-            audio.play();
-            isPlaying = true;
-            updatePlayIcon();
-            updateLibrary();
-        }
-
-        function togglePlay() {
-            if (audio.paused) {
-                audio.play();
-                isPlaying = true;
-            } else {
-                audio.pause();
-                isPlaying = false;
-            }
-            updatePlayIcon();
-        }
-
-        function updatePlayIcon() {
-            playIcon.innerHTML = isPlaying 
-                ? '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>' 
-                : '<path d="M8 5v14l11-7z"/>';
-        }
-
-        function playNext() {
-            let next = currentIndex + 1;
-            if (isShuffle) next = Math.floor(Math.random() * playlist.length);
-            if (next >= playlist.length) next = 0;
-            playTrack(next);
-        }
-
-        function playPrev() {
-            let prev = currentIndex - 1;
-            if (prev < 0) prev = playlist.length - 1;
-            playTrack(prev);
-        }
-
-        function updateLibrary() {
+        function updateFavUI() {
             const list = document.getElementById('fav-list');
             list.innerHTML = '';
-            playlist.forEach((track, i) => {
+            favorites.forEach((t, i) => {
                 const li = document.createElement('li');
                 li.className = 'fav-item';
-                if(i === currentIndex) li.style.borderColor = 'var(--accent)';
-                
                 li.innerHTML = `
                     <div class="fav-info" onclick="playTrack(${i})">
-                        <div style="font-weight:bold; color:${i === currentIndex ? 'var(--accent)' : 'inherit'}">${track.title}</div>
-                        <div style="font-size:12px; opacity:0.6">${track.artist}</div>
+                        <div style="font-weight:600">${t.title}</div>
+                        <div style="font-size:12px; opacity:0.6">${t.artist}</div>
                     </div>
-                    <button class="remove-btn" onclick="removeTrack(${i})">✕</button>
+                    <button class="del-btn" onclick="removeTrack(${i}, event)">✕</button>
                 `;
                 list.appendChild(li);
             });
         }
 
-        function removeTrack(i) {
-            playlist.splice(i, 1);
-            if (i === currentIndex) playNext();
-            updateLibrary();
-            showToast("Удалено");
+        // Исправление 7: Пауза при повторном клике в списке
+        function playTrack(i) {
+            const track = favorites[i];
+            if (currentTrack && currentTrack.id === track.id) {
+                if (!audio.paused) {
+                    audio.pause();
+                    showToast("Трек приостановлен");
+                    playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+                } else {
+                    audio.play();
+                    playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
+                }
+                return;
+            }
+            currentTrack = track;
+            audio.src = track.src;
+            document.getElementById('title').innerText = track.title;
+            document.getElementById('artist').innerText = track.artist;
+            updateMarquee(document.getElementById('title'));
+            updateMarquee(document.getElementById('artist'));
+            audio.play();
+            playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>';
         }
 
-        function showToast(text) {
-            toast.innerText = text;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
+        function removeTrack(i, e) {
+            e.stopPropagation();
+            favorites.splice(i, 1);
+            updateFavUI();
         }
 
-        // Навигация без "двоения"
+        function setScheme(name) {
+            document.body.className = `scheme-${name} ${document.body.classList.contains('light-theme') ? 'light-theme' : ''}`;
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('light-theme');
+        }
+
+        // Исправление 2: Навигация без "двоения"
         document.querySelectorAll('.nav-item').forEach(item => {
             item.onclick = () => {
+                const isMobile = window.innerWidth <= 768;
                 const idx = item.dataset.index;
-                navIndicator.style.transform = `translateY(${idx * 60}px)`;
+                const indicator = document.getElementById('nav-indicator');
                 
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                if (!isMobile) {
+                    indicator.style.transform = `translateY(${idx * 60}px)`;
+                }
+
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
                 
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -371,41 +327,10 @@
             };
         });
 
-        function setScheme(name) {
-            document.body.className = `scheme-${name} ${document.body.classList.contains('light-theme') ? 'light-theme' : ''}`;
-            showToast("Цвет изменен");
-        }
-
-        function toggleTheme() {
-            document.body.classList.toggle('light-theme');
-        }
-
-        function toggleRepeat() { 
-            isRepeat = !isRepeat; 
-            audio.loop = isRepeat;
-            document.getElementById('repeatBtn').classList.toggle('active-mode', isRepeat);
-        }
-
-        function toggleShuffle() {
-            isShuffle = !isShuffle;
-            document.getElementById('shuffleBtn').classList.toggle('active-mode', isShuffle);
-        }
-
-        playBtn.onclick = togglePlay;
-        audio.onended = () => { if(!isRepeat) playNext(); };
-        
-        // Слайдер прогресса
-        document.getElementById('progressTrack').onclick = (e) => {
-            const rect = e.target.getBoundingClientRect();
-            const percent = (e.clientX - rect.left) / rect.width;
-            audio.currentTime = percent * audio.duration;
+        playBtn.onclick = () => {
+            if (audio.paused) { audio.play(); playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; }
+            else { audio.pause(); playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>'; }
         };
-
-        audio.ontimeupdate = () => {
-            const p = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('progressFill').style.width = p + '%';
-        };
-
     </script>
 </body>
 </html>
