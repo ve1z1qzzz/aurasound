@@ -38,7 +38,7 @@
 
         * { 
             margin: 0; padding: 0; box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; /* Убирает синий блик при нажатии на мобилке */
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -92,7 +92,11 @@
             position: relative; z-index: 2;
             height: 52px; display: flex; align-items: center; justify-content: center;
         }
-        .nav-item.active { opacity: 1; }
+        .nav-item.active { 
+            opacity: 1; 
+            background: rgba(var(--accent-rgb), 0.15);
+            box-shadow: inset 0 0 10px rgba(var(--accent-rgb), 0.1);
+        }
         
         .nav-indicator {
             position: absolute;
@@ -220,11 +224,19 @@
 
             .logo { display: none; }
 
-            .nav-container { display: flex; width: 100%; justify-content: space-around; }
+            .nav-container { display: flex; width: 100%; justify-content: space-around; height: 100%; }
 
             .nav-item {
                 margin-bottom: 0; padding: 10px; font-size: 14px;
-                height: 100%; flex: 1;
+                height: 100%; flex: 1; border-radius: 0; background: transparent;
+            }
+            
+            /* Свечение разделов на телефоне */
+            .nav-item.active {
+                background: transparent;
+                color: var(--accent);
+                text-shadow: 0 0 10px rgba(var(--accent-rgb), 0.8);
+                opacity: 1;
             }
 
             .nav-indicator { display: none; }
@@ -236,15 +248,53 @@
                 width: 95%; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
             }
 
-            .cover-container { width: 220px; height: 220px; margin-bottom: 20px; }
+            /* Скрываем шкалу звука на мобилке */
+            #volumeTrack { display: none; }
+            .volume-container { justify-content: center; width: 100%; margin-top: 10px; }
+            
+            /* Специфический HUD для мобилок */
+            .mobile-hud {
+                display: flex !important;
+                justify-content: space-between;
+                width: 100%;
+                margin-top: 25px;
+                padding: 0 10px;
+            }
+            
+            .mobile-hud .nav-btn {
+                width: 50px;
+                height: 50px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: rgba(var(--accent-rgb), 0.08);
+                border-radius: 12px;
+                opacity: 0.7;
+            }
+            
+            .mobile-hud .nav-btn svg {
+                width: 28px;
+                height: 28px;
+            }
+
+            /* Прячем старые кнопки из основного ряда, чтобы не дублировались */
+            .controls-row .nav-btn:first-child, /* Add */
+            .controls-row .nav-btn:nth-child(3), /* Shuffle - по индексу в DOM */
+            .controls-row .nav-btn:nth-child(7), /* Repeat */
+            .controls-row .nav-btn:last-child {  /* Like */
+                display: none;
+            }
+
+            .cover-container { width: 200px; height: 200px; margin-bottom: 20px; }
             .song-meta h1 { font-size: 22px; }
-            .controls-row { gap: 8px; }
-            .circle-btn { width: 58px; height: 58px; }
-            .nav-btn svg { width: 24px; height: 24px; }
-            .volume-container { width: 140px; }
+            .controls-row { gap: 25px; } /* Больше отступов между основными кнопками */
+            .circle-btn { width: 70px; height: 70px; }
             
             .fav-list { padding: 0 15px; max-height: 60vh; }
         }
+
+        /* Прячем мобильный худ на ПК */
+        .mobile-hud { display: none; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
@@ -279,16 +329,28 @@
                     </div>
                     <div class="slider-base" id="progressTrack"><div class="slider-fill" id="progressFill"></div></div>
                     <div class="time-info"><span id="curTime">0:00</span><span id="durTime">0:00</span></div>
+                    
                     <div class="controls-row">
                         <button class="nav-btn" onclick="document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
                         <input type="file" id="fileInput" accept="audio/*" multiple style="display: none;" onchange="handleMultipleFiles(event)">
-                        <button class="nav-btn" id="shuffleBtn" onclick="toggleShuffle()"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.44l2.04 2.04V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+                        
+                        <button class="nav-btn pc-only-btn" id="shuffleBtn" onclick="toggleShuffle()"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.44l2.04 2.04V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+                        
                         <button class="nav-btn" onclick="playPrevious()"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
                         <button class="circle-btn" id="playBtn"><svg id="playIcon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
                         <button class="nav-btn" onclick="playNext()"><svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg></button>
-                        <button class="nav-btn" id="repeatBtn" onclick="toggleRepeat()"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
-                        <button class="nav-btn" id="likeBtn" onclick="toggleLike()"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+                        
+                        <button class="nav-btn pc-only-btn" id="repeatBtn" onclick="toggleRepeat()"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+                        <button class="nav-btn pc-only-btn" id="likeBtn" onclick="toggleLike()"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
                     </div>
+
+                    <div class="mobile-hud">
+                        <button class="nav-btn" onclick="document.getElementById('fileInput').click()"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+                        <button class="nav-btn" id="shuffleBtnMob" onclick="toggleShuffle()"><svg viewBox="0 0 24 24"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.44l2.04 2.04V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button>
+                        <button class="nav-btn" id="repeatBtnMob" onclick="toggleRepeat()"><svg viewBox="0 0 24 24"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button>
+                        <button class="nav-btn" id="likeBtnMob" onclick="toggleLike()"><svg viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg></button>
+                    </div>
+
                     <div class="volume-container">
                         <div id="volSvg" class="volume-icon" onclick="toggleMute()"></div>
                         <div class="slider-base" id="volumeTrack" style="height: 5px;"><div class="slider-fill" id="volumeFill" style="width: 50%;"></div></div>
@@ -319,7 +381,6 @@
     </div>
 
     <script>
-        // ... (Весь твой скрипт из исходного файла остается без изменений) ...
         const audio = document.getElementById('audio');
         const playBtn = document.getElementById('playBtn');
         const playIcon = document.getElementById('playIcon');
@@ -343,6 +404,9 @@
         let isShuffle = false;
         let shufflePool = [];
         let playbackHistory = [];
+
+        // Инициализация иконки звука СРАЗУ
+        updateVolumeIcon(0.5);
 
         const dbName = "AuraMusicDB";
         let db;
@@ -468,9 +532,31 @@
             showToast("Удалено из памяти");
         }
 
-        function toggleLike() { if (currentTrackData.src === "") return; showToast("Треки сохраняются автоматически"); }
-        function toggleRepeat() { isRepeating = !isRepeating; audio.loop = isRepeating; repeatBtn.classList.toggle('active-mode', isRepeating); showToast(isRepeating ? "Повтор включен" : "Повтор выключен"); }
-        function toggleShuffle() { isShuffle = !isShuffle; shuffleBtn.classList.toggle('active-mode', isShuffle); if(isShuffle) shufflePool = []; showToast(isShuffle ? "Перемешивание включено" : "Перемешивание выключено"); }
+        function toggleLike() { 
+            if (currentTrackData.src === "") return; 
+            showToast("Треки сохраняются автоматически"); 
+            // Визуальный отклик для мобилок
+            const mLike = document.getElementById('likeBtnMob');
+            const pLike = document.getElementById('likeBtn');
+            mLike.classList.toggle('active-mode');
+            pLike.classList.toggle('active-mode');
+        }
+        
+        function toggleRepeat() { 
+            isRepeating = !isRepeating; 
+            audio.loop = isRepeating; 
+            document.getElementById('repeatBtn').classList.toggle('active-mode', isRepeating); 
+            document.getElementById('repeatBtnMob').classList.toggle('active-mode', isRepeating); 
+            showToast(isRepeating ? "Повтор включен" : "Повтор выключен"); 
+        }
+        
+        function toggleShuffle() { 
+            isShuffle = !isShuffle; 
+            document.getElementById('shuffleBtn').classList.toggle('active-mode', isShuffle); 
+            document.getElementById('shuffleBtnMob').classList.toggle('active-mode', isShuffle); 
+            if(isShuffle) shufflePool = []; 
+            showToast(isShuffle ? "Перемешивание включено" : "Перемешивание выключен"); 
+        }
 
         function playNext(saveToHistory = true) { 
             if (favorites.length === 0) return; 
@@ -523,15 +609,25 @@
         audio.ontimeupdate = () => { if (audio.duration && !document.getElementById('progressTrack').classList.contains('dragging')) { document.getElementById('progressFill').style.width = (audio.currentTime / audio.duration) * 100 + '%'; document.getElementById('curTime').innerText = formatTime(Math.floor(audio.currentTime)); document.getElementById('durTime').innerText = formatTime(Math.floor(audio.duration)); } };
         function formatTime(s) { let m = Math.floor(s/60); let sc = s%60; return `${m}:${sc<10?'0':''}${sc}`; }
         
-        function setScheme(name, el) { document.body.className = `scheme-${name} ${document.body.classList.contains('light-theme') ? 'light-theme' : ''}`; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); el.classList.add('active'); updateFavUI(); updateVolumeIcon(audio.volume); }
+        function setScheme(name, el) { 
+            document.body.className = `scheme-${name} ${document.body.classList.contains('light-theme') ? 'light-theme' : ''}`; 
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); 
+            el.classList.add('active'); 
+            updateFavUI(); 
+            updateVolumeIcon(audio.volume); 
+        }
+        
         function toggleTheme() { document.body.classList.toggle('light-theme'); themeBtn.innerText = document.body.classList.contains('light-theme') ? "Темная тема" : "Светлая тема"; updateFavUI(); updateVolumeIcon(audio.volume); }
         function showToast(text) { toast.innerText = text; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2000); }
 
         document.querySelectorAll('.nav-item').forEach(item => {
             item.onclick = () => {
-                const idx = item.dataset.index; if (window.innerWidth > 768) navIndicator.style.transform = `translateY(${idx * 60}px)`; 
-                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); item.classList.add('active');
-                document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(item.dataset.page).classList.add('active');
+                const idx = item.dataset.index; 
+                if (window.innerWidth > 768) navIndicator.style.transform = `translateY(${idx * 60}px)`; 
+                document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); 
+                item.classList.add('active');
+                document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); 
+                document.getElementById(item.dataset.page).classList.add('active');
             };
         });
 
@@ -555,7 +651,12 @@
             requestAnimationFrame(draw);
         }
         draw();
-        function checkLikeStatus() { const idx = favorites.findIndex(t => t.src === currentTrackData.src); likeBtn.classList.toggle('liked', idx !== -1); }
+        function checkLikeStatus() { 
+            const idx = favorites.findIndex(t => t.src === currentTrackData.src); 
+            const isLiked = idx !== -1;
+            document.getElementById('likeBtn').classList.toggle('liked', isLiked); 
+            document.getElementById('likeBtnMob').classList.toggle('active-mode', isLiked);
+        }
     </script>
 </body>
 </html>
