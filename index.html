@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Aura Music - Professional Ambient Player</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jsmediatags/3.9.5/jsmediatags.min.js"></script>
     <style>
@@ -36,7 +36,10 @@
         body.scheme-midnight { --accent-rgb: 100, 149, 237; }
         body.scheme-gold { --accent-rgb: 212, 175, 55; }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; padding: 0; box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; /* Убирает синий блик при нажатии на мобилке */
+        }
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
@@ -58,6 +61,7 @@
             z-index: 1;
             display: flex;
             height: 100vh;
+            flex-direction: row;
         }
 
         .sidebar {
@@ -69,6 +73,7 @@
             flex-direction: column;
             border-right: 1px solid rgba(var(--accent-rgb), 0.1);
             position: relative;
+            transition: var(--transition);
         }
 
         .logo {
@@ -85,7 +90,7 @@
             transition: 0.3s; color: var(--text); opacity: 0.5;
             margin-bottom: 8px; font-weight: 500; font-size: 17px;
             position: relative; z-index: 2;
-            height: 52px; display: flex; align-items: center;
+            height: 52px; display: flex; align-items: center; justify-content: center;
         }
         .nav-item.active { opacity: 1; }
         
@@ -106,6 +111,7 @@
             align-items: center;
             justify-content: center;
             position: relative;
+            transition: padding 0.4s;
         }
 
         .page {
@@ -199,6 +205,47 @@
         #toast { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 8px 25px; border-radius: 50px; font-weight: 600; z-index: 1000; opacity: 0; transition: 0.5s; pointer-events: none; }
         #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
 
+        /* --- АДАПТИВНОСТЬ ПОД ТЕЛЕФОН --- */
+        @media (max-width: 768px) {
+            .app-shell { flex-direction: column; }
+
+            .sidebar {
+                width: 100%; height: 75px;
+                position: fixed; bottom: 0; left: 0;
+                flex-direction: row; padding: 0 15px;
+                border-right: none; border-top: 1px solid rgba(var(--accent-rgb), 0.1);
+                z-index: 100; justify-content: space-around; align-items: center;
+                backdrop-filter: blur(25px);
+            }
+
+            .logo { display: none; }
+
+            .nav-container { display: flex; width: 100%; justify-content: space-around; }
+
+            .nav-item {
+                margin-bottom: 0; padding: 10px; font-size: 14px;
+                height: 100%; flex: 1;
+            }
+
+            .nav-indicator { display: none; }
+
+            .content { padding-bottom: 80px; }
+
+            .player-hub {
+                padding: 30px 20px; border-radius: 35px;
+                width: 95%; box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+            }
+
+            .cover-container { width: 220px; height: 220px; margin-bottom: 20px; }
+            .song-meta h1 { font-size: 22px; }
+            .controls-row { gap: 8px; }
+            .circle-btn { width: 58px; height: 58px; }
+            .nav-btn svg { width: 24px; height: 24px; }
+            .volume-container { width: 140px; }
+            
+            .fav-list { padding: 0 15px; max-height: 60vh; }
+        }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
@@ -257,7 +304,7 @@
 
             <div class="page" id="settings">
                 <h1 style="margin: 40px;">Настройки</h1>
-                <div style="padding: 30px; background: var(--glass); border-radius: 30px; width: 90%; max-width: 450px; text-align: center;">
+                <div style="padding: 30px; background: var(--glass); border-radius: 30px; width: 90%; max-width: 450px; text-align: center; margin: 0 auto;">
                     <p style="margin-bottom: 20px; opacity: 0.7;">Цветовое свечение</p>
                     <div class="scheme-picker">
                         <div class="color-dot active" style="background: #c0c0c0;" onclick="setScheme('silver', this)"></div>
@@ -272,6 +319,7 @@
     </div>
 
     <script>
+        // ... (Весь твой скрипт из исходного файла остается без изменений) ...
         const audio = document.getElementById('audio');
         const playBtn = document.getElementById('playBtn');
         const playIcon = document.getElementById('playIcon');
@@ -296,6 +344,49 @@
         let shufflePool = [];
         let playbackHistory = [];
 
+        const dbName = "AuraMusicDB";
+        let db;
+
+        const request = indexedDB.open(dbName, 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains("tracks")) {
+                db.createObjectStore("tracks", { keyPath: "id" });
+            }
+        };
+        request.onsuccess = (e) => {
+            db = e.target.result;
+            loadTracksFromDB();
+        };
+
+        async function saveTrackToDB(track, fileBlob) {
+            const transaction = db.transaction(["tracks"], "readwrite");
+            const store = transaction.objectStore("tracks");
+            store.put({ ...track, blob: fileBlob });
+        }
+
+        async function loadTracksFromDB() {
+            const transaction = db.transaction(["tracks"], "readonly");
+            const store = transaction.objectStore("tracks");
+            const request = store.getAll();
+            request.onsuccess = () => {
+                const savedTracks = request.result;
+                if (savedTracks.length > 0) {
+                    favorites = savedTracks.map(t => ({
+                        ...t,
+                        src: URL.createObjectURL(t.blob)
+                    }));
+                    updateFavUI();
+                    if (currentTrackData.src === "") loadTrack(0);
+                }
+            };
+        }
+
+        async function removeFromDB(id) {
+            const transaction = db.transaction(["tracks"], "readwrite");
+            transaction.objectStore("tracks").delete(id);
+        }
+
         let audioCtx, analyser, source, dataArray;
         function initAudioContext() {
             if (audioCtx) return;
@@ -312,16 +403,17 @@
             let isDragging = false;
             const update = (e) => {
                 const rect = track.getBoundingClientRect();
-                const val = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const val = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
                 fill.style.width = (val * 100) + '%';
                 onUpdate(val);
             };
-            track.addEventListener('mousedown', (e) => {
-                isDragging = true; track.classList.add('dragging');
-                if(onStart) onStart(); update(e);
-            });
+            track.addEventListener('mousedown', (e) => { isDragging = true; track.classList.add('dragging'); if(onStart) onStart(); update(e); });
+            track.addEventListener('touchstart', (e) => { isDragging = true; track.classList.add('dragging'); if(onStart) onStart(); update(e); });
             window.addEventListener('mousemove', (e) => { if(isDragging) update(e); });
+            window.addEventListener('touchmove', (e) => { if(isDragging) update(e); });
             window.addEventListener('mouseup', () => { if(isDragging) { isDragging = false; track.classList.remove('dragging'); if(onEnd) onEnd(); } });
+            window.addEventListener('touchend', () => { if(isDragging) { isDragging = false; track.classList.remove('dragging'); if(onEnd) onEnd(); } });
         }
 
         setupSlider(document.getElementById('progressTrack'), document.getElementById('progressFill'), (val) => { if(audio.duration) audio.currentTime = val * audio.duration; }, () => { audio.muted = true; }, () => { audio.muted = false; });
@@ -332,11 +424,7 @@
             if (v > 0) arcs += '<path d="M14.5 9.5c0.8 1 0.8 4 0 5" />'; 
             if (v > 0.4) arcs += '<path d="M17 7.5c1.5 2 1.5 7 0 9" />';
             if (v > 0.7) arcs += '<path d="M19.5 5.5c2.5 3.5 2.5 9.5 0 13" />';
-            volSvg.innerHTML = `
-                <svg viewBox="0 0 24 24">
-                    <path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none" />
-                    ${v === 0 ? '<line x1="15" y1="9" x2="21" y2="15" /><line x1="21" y1="9" x2="15" y2="15" />' : arcs}
-                </svg>`;
+            volSvg.innerHTML = `<svg viewBox="0 0 24 24"><path d="M11 5L6 9H3v6h3l5 4V5z" fill="currentColor" stroke="none" />${v === 0 ? '<line x1="15" y1="9" x2="21" y2="15" /><line x1="21" y1="9" x2="15" y2="15" />' : arcs}</svg>`;
         }
 
         function toggleMute() {
@@ -345,36 +433,42 @@
             document.getElementById('volumeFill').style.width = (audio.volume * 100) + '%';
             updateVolumeIcon(audio.volume);
         }
-        updateVolumeIcon(audio.volume);
 
         async function handleMultipleFiles(event) {
             initAudioContext();
             const files = Array.from(event.target.files);
-            const startIdx = favorites.length;
+            showToast(`Загрузка ${files.length} файлов...`);
             for (const file of files) {
                 const fileURL = URL.createObjectURL(file);
-                const track = { title: file.name.replace(/\.[^/.]+$/, ""), artist: "uploaded", src: fileURL, cover: "", id: Date.now() + Math.random() };
+                const track = { title: file.name.replace(/\.[^/.]+$/, ""), artist: "Загружено", src: fileURL, cover: "", id: Date.now() + Math.random() };
                 await new Promise(r => jsmediatags.read(file, { onSuccess: t => {
                     if (t.tags.picture) {
                         const {data, format} = t.tags.picture;
                         let b64 = ""; for(let i=0; i<data.length; i++) b64 += String.fromCharCode(data[i]);
                         track.cover = "data:" + format + ";base64," + btoa(b64);
-                    } r();
+                    }
+                    if(t.tags.title) track.title = t.tags.title;
+                    if(t.tags.artist) track.artist = t.tags.artist;
+                    r();
                 }, onError: r }));
                 favorites.push(track);
+                saveTrackToDB(track, file);
             }
             updateFavUI();
-            if(!isPlaying && favorites.length > 0 && (currentTrackData.src === "" || currentTrackData.title === "Добавьте музыку")) loadTrack(startIdx);
+            if(!isPlaying && favorites.length > 0 && (currentTrackData.src === "" || currentTrackData.title === "Добавьте музыку")) loadTrack(favorites.length - files.length);
         }
 
-        function toggleLike() {
-            if (currentTrackData.src === "") return;
-            const idx = favorites.findIndex(t => t.src === currentTrackData.src);
-            if (idx === -1) { favorites.unshift({...currentTrackData}); likeBtn.classList.add('liked'); showToast("Добавлено в избранное"); }
-            else { favorites.splice(idx, 1); likeBtn.classList.remove('liked'); showToast("Удалено из избранного"); }
+        function removeTrack(index, event) {
+            event.stopPropagation();
+            const track = favorites[index];
+            removeFromDB(track.id);
+            favorites.splice(index, 1);
             updateFavUI();
+            checkLikeStatus();
+            showToast("Удалено из памяти");
         }
 
+        function toggleLike() { if (currentTrackData.src === "") return; showToast("Треки сохраняются автоматически"); }
         function toggleRepeat() { isRepeating = !isRepeating; audio.loop = isRepeating; repeatBtn.classList.toggle('active-mode', isRepeating); showToast(isRepeating ? "Повтор включен" : "Повтор выключен"); }
         function toggleShuffle() { isShuffle = !isShuffle; shuffleBtn.classList.toggle('active-mode', isShuffle); if(isShuffle) shufflePool = []; showToast(isShuffle ? "Перемешивание включено" : "Перемешивание выключено"); }
 
@@ -404,26 +498,8 @@
             favorites.forEach((t, i) => {
                 const li = document.createElement('li'); 
                 li.className = 'fav-item';
-                li.innerHTML = `
-                    <div class="cursor-glow"></div>
-                    <div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-start;position:relative;z-index:1;" onclick="playTrack(${i})">
-                        ${t.cover ? `<img src="${t.cover}" style="width:38px;height:38px;border-radius:10px;object-fit:cover;">` : `<div style="width:38px;height:38px;background:rgba(var(--accent-rgb),0.1);border-radius:10px;"></div>`}
-                        <div style="text-align:left">
-                            <div style="font-weight:600;font-size:14px;line-height:1.2;white-space:nowrap;">${t.title}</div>
-                            <div style="font-size:11px;opacity:0.5;text-transform:lowercase;">${t.artist}</div>
-                        </div>
-                    </div>
-                    <button style="background:none;border:none;color:#ff4d4d;font-size:18px;cursor:pointer;margin-left:auto;padding:10px;position:relative;z-index:2;" 
-                            onclick="event.stopPropagation();favorites.splice(${i},1);updateFavUI();checkLikeStatus()">✕</button>`;
-                
-                li.addEventListener('mousemove', (e) => {
-                    const rect = li.getBoundingClientRect();
-                    const glow = li.querySelector('.cursor-glow');
-                    if (glow) {
-                        glow.style.left = (e.clientX - rect.left) + 'px';
-                        glow.style.top = (e.clientY - rect.top) + 'px';
-                    }
-                });
+                li.innerHTML = `<div class="cursor-glow"></div><div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-start;position:relative;z-index:1;" onclick="playTrack(${i})">${t.cover ? `<img src="${t.cover}" style="width:38px;height:38px;border-radius:10px;object-fit:cover;">` : `<div style="width:38px;height:38px;background:rgba(var(--accent-rgb),0.1);border-radius:10px;"></div>`}<div style="text-align:left"><div style="font-weight:600;font-size:14px;line-height:1.2;white-space:nowrap;">${t.title}</div><div style="font-size:11px;opacity:0.5;text-transform:lowercase;">${t.artist}</div></div></div><button style="background:none;border:none;color:#ff4d4d;font-size:18px;cursor:pointer;margin-left:auto;padding:10px;position:relative;z-index:2;" onclick="removeTrack(${i}, event)">✕</button>`;
+                li.addEventListener('mousemove', (e) => { const rect = li.getBoundingClientRect(); const glow = li.querySelector('.cursor-glow'); if (glow) { glow.style.left = (e.clientX - rect.left) + 'px'; glow.style.top = (e.clientY - rect.top) + 'px'; } });
                 list.appendChild(li);
             });
         }
@@ -453,7 +529,7 @@
 
         document.querySelectorAll('.nav-item').forEach(item => {
             item.onclick = () => {
-                const idx = item.dataset.index; navIndicator.style.transform = `translateY(${idx * 60}px)`; 
+                const idx = item.dataset.index; if (window.innerWidth > 768) navIndicator.style.transform = `translateY(${idx * 60}px)`; 
                 document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active')); item.classList.add('active');
                 document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById(item.dataset.page).classList.add('active');
             };
