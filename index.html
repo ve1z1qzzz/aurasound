@@ -245,11 +245,21 @@
 }
 
 /* Оставляем выделение фоном только для мобильной версии, где индикатор скрыт */
-@media (max-width: 768px) {
-    .nav-item.active {
-        background: rgba(var(--accent-rgb), 0.15);
-        box-shadow: 0 0 10px rgba(var(--accent-rgb), 0.1);
-    }
+/* Внутри @media (max-width: 768px) */
+
+/* Полностью скрываем контейнер со звуком на телефоне */
+.volume-container { 
+    display: none !important; 
+}
+
+/* Опускаем блок дополнительных кнопок ниже и убираем лишние отступы */
+.mobile-hud {
+    display: flex !important;
+    justify-content: space-between;
+    width: 100%;
+    margin-top: 10px; /* Уменьшили отступ сверху, чтобы блок сел ниже к краю */
+    padding: 0 10px;
+    margin-bottom: -10px; /* Смещаем чуть ниже к навигации */
 }
 
             .nav-indicator { display: none; }
