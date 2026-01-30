@@ -146,7 +146,13 @@
 
         .song-meta { width: 100%; overflow: hidden; margin-bottom: 25px; }
         .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
-        .marquee-text { display: inline-block; will-change: transform; }
+        .marquee-container { width: 100%; overflow: hidden; white-space: nowrap; position: relative; }
+/* Добавляем display: inline-block и padding, чтобы расчет ширины был верным */
+.marquee-text { 
+    display: inline-block; 
+    will-change: transform; 
+    padding-right: 50px; /* Отступ для плавного зацикливания */
+}
         .song-meta h1 { font-size: 28px; margin-bottom: 6px; }
         .song-meta p { opacity: 0.5; font-size: 16px; text-transform: lowercase; }
 
@@ -404,6 +410,13 @@
     </div>
 
     <script>
+// Функция для очистки текста от ссылок
+function cleanText(text) {
+    if (!text) return "";
+    // Регулярное выражение ищет домены (.ru, .com, .net и т.д.) и протоколы (http)
+    const urlPattern = /(https?:\/\/)?(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/gi;
+    return text.replace(urlPattern, "").trim();
+}
         const audio = document.getElementById('audio');
         const playBtn = document.getElementById('playBtn');
         const playIcon = document.getElementById('playIcon');
@@ -534,8 +547,8 @@
                         let b64 = ""; for(let i=0; i<data.length; i++) b64 += String.fromCharCode(data[i]);
                         track.cover = "data:" + format + ";base64," + btoa(b64);
                     }
-                    if(t.tags.title) track.title = t.tags.title;
-                    if(t.tags.artist) track.artist = t.tags.artist;
+                    if(t.tags.title) track.title = cleanText(t.tags.title);
+if(t.tags.artist) track.artist = cleanText(t.tags.artist);
                     r();
                 }, onError: r }));
                 favorites.push(track);
@@ -607,22 +620,32 @@
             favorites.forEach((t, i) => {
                 const li = document.createElement('li'); 
                 li.className = 'fav-item';
-                li.innerHTML = `<div class="cursor-glow"></div><div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-start;position:relative;z-index:1;" onclick="playTrack(${i})">${t.cover ? `<img src="${t.cover}" style="width:38px;height:38px;border-radius:10px;object-fit:cover;">` : `<div style="width:38px;height:38px;background:rgba(var(--accent-rgb),0.1);border-radius:10px;"></div>`}<div style="text-align:left"><div style="font-weight:600;font-size:14px;line-height:1.2;white-space:nowrap;">${t.title}</div><div style="font-size:11px;opacity:0.5;text-transform:lowercase;">${t.artist}</div></div></div><button style="background:none;border:none;color:#ff4d4d;font-size:18px;cursor:pointer;margin-left:auto;padding:10px;position:relative;z-index:2;" onclick="removeTrack(${i}, event)">✕</button>`;
+                li.innerHTML = `<div class="cursor-glow"></div>
+    <div style="display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-start;position:relative;z-index:1;" onclick="playTrack(${i})">
+        ${t.cover ? `<img src="${t.cover}" style="width:38px;height:38px;border-radius:10px;object-fit:cover;">` : `<div style="width:38px;height:38px;background:rgba(var(--accent-rgb),0.1);border-radius:10px;"></div>`}
+        <div style="text-align:left">
+            <div style="font-weight:600;font-size:14px;line-height:1.2;white-space:nowrap;">${cleanText(t.title)}</div>
+            <div style="font-size:11px;opacity:0.5;text-transform:lowercase;">${cleanText(t.artist)}</div>
+        </div>
+    </div>...`;
                 li.addEventListener('mousemove', (e) => { const rect = li.getBoundingClientRect(); const glow = li.querySelector('.cursor-glow'); if (glow) { glow.style.left = (e.clientX - rect.left) + 'px'; glow.style.top = (e.clientY - rect.top) + 'px'; } });
                 list.appendChild(li);
             });
         }
 
-        function loadTrack(i) {
-            const t = favorites[i]; if(!t) return;
-            currentTrackData = {...t}; 
-            const titleEl = document.getElementById('title');
-            const artistEl = document.getElementById('artist');
-            titleEl.innerText = t.title; artistEl.innerText = t.artist;
-            checkMarquee(titleEl); checkMarquee(artistEl);
-            if (t.cover) coverWrapper.innerHTML = `<img src="${t.cover}" class="cover-art" alt="Cover">`; else coverWrapper.innerHTML = `<div class="no-cover"></div>`;
-            audio.src = t.src; checkLikeStatus();
-        }
+       function loadTrack(i) {
+    const t = favorites[i]; if(!t) return;
+    currentTrackData = {...t}; 
+    const titleEl = document.getElementById('title');
+    const artistEl = document.getElementById('artist');
+    
+    // Принудительно чистим при выводе на экран
+    titleEl.innerText = cleanText(t.title); 
+    artistEl.innerText = cleanText(t.artist);
+    
+    checkMarquee(titleEl); checkMarquee(artistEl);
+    // ... остальной код функции
+}
 
         function checkMarquee(el) { const containerWidth = el.parentElement.offsetWidth; el.style.animation = 'none'; if (el.scrollWidth > containerWidth) { const duration = el.innerText.length * 0.25; el.style.animation = `marquee ${duration}s linear infinite`; } }
         function playTrack(i, saveToHistory = true) { if (favorites.length === 0) return; if(saveToHistory && currentTrackData.src !== "" && favorites[i].src !== currentTrackData.src) playbackHistory.push(favorites.findIndex(t => t.src === currentTrackData.src)); initAudioContext(); loadTrack(i); audio.play(); isPlaying = true; updatePlayIcon(); }
